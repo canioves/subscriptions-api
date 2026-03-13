@@ -2,10 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"net/http"
 	"subscriptions-api/internal/config"
 	"subscriptions-api/internal/database"
+	"subscriptions-api/internal/handler"
+	"subscriptions-api/internal/repository"
+	"subscriptions-api/internal/service"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -20,5 +25,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	fmt.Println(database)
+	repo := repository.NewSubscriptionRepository(database)
+	service := service.NewSubscriptionRepository(repo)
+	handler := handler.NewSubscriptionHandler(service)
+
+	router := mux.NewRouter()
+	router.HandleFunc("/subscriptions", handler.CreateSubscription)
+
+	http.ListenAndServe(":"+config.AppPort, router)
 }

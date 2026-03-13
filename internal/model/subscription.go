@@ -7,10 +7,10 @@ import (
 )
 
 type Subscription struct {
-	ID          uint
-	ServiceName string
-	Price       uint
-	UserID      uuid.UUID
-	StartDate   time.Time
-	EndDate     *time.Time
+	ID          uint       `db:"id"`
+	ServiceName string     `db:"service_name"`
+	Price       uint       `db:"price"`
+	UserID      uuid.UUID  `db:"user_id"`
+	StartDate   time.Time  `db:"start_date"`
+	EndDate     *time.Time `db:"end_date"`
 }
