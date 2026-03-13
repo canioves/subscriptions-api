@@ -28,8 +28,8 @@ func NewSubscriptionRepository(database *pgx.Conn) SubscriptionRepository {
 func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub *model.Subscription) error {
 	query := `
 		INSERT INTO 
-		subscriptions (id, service_name, price, user_id, start_date, end_date)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		subscriptions (service_name, price, user_id, start_date, end_date)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	var id uint
@@ -37,7 +37,6 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub *mo
 	row := r.database.QueryRow(
 		ctx,
 		query,
-		sub.ID,
 		sub.ServiceName,
 		sub.Price,
 		sub.UserID,
@@ -48,7 +47,7 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub *mo
 	if err := row.Scan(&id); err != nil {
 		return fmt.Errorf("failed to create subscription with id %d: %w", id, err)
 	}
-
+	sub.ID = id
 	log.Printf("created new subscription with id %d\n", id)
 	return nil
 }

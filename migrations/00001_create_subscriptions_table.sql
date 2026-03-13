@@ -6,8 +6,7 @@ CREATE TABLE "subscriptions" (
     user_id UUID NOT NULL,
     start_date timestamptz NOT NULL,
     end_date timestamptz
-
 );
 
 -- +goose Down
-DROP TABLE "subscriptions";
+DROP TABLE "subscriptions" CASCADE;

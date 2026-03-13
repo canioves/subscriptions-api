@@ -7,6 +7,8 @@ import (
 	"subscriptions-api/internal/dto"
 	"subscriptions-api/internal/model"
 	"subscriptions-api/internal/service"
+
+	"github.com/google/uuid"
 )
 
 type SubscriptionHandler struct {
@@ -20,19 +22,50 @@ func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHa
 func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var req dto.SubscriptionRequest
+	var req dto.CreateSubscriptionRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "error while decoding request body", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 
+	if err := req.Validate(); err != nil {
+		if validationErr, ok := err.(*dto.ValidationError); ok {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(validationErr)
+			return
+		}
+		http.Error(w, "validation error", http.StatusBadRequest)
+		return
+	}
+
+	parsedStartDate, err := dto.ParseDate(&req.StartDate)
+	if err != nil {
+		http.Error(w, "invalid start_date format: must be mm-yyyy", http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+	parsedEndDate, err := dto.ParseDate(req.EndDate)
+	if err != nil {
+		http.Error(w, "invalid end_date format: must be mm-yyyy", http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	userUuid, err := uuid.Parse(req.UserID)
+	if err != nil {
+		http.Error(w, "invalid user_id format", http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
 	sub := &model.Subscription{
 		ServiceName: req.ServiceName,
-		Price:       req.Price,
-		UserID:      req.UserID,
-		StartDate:   req.StartDate,
-		EndDate:     req.EndDate,
+		Price:       uint(req.Price),
+		UserID:      userUuid,
+		StartDate:   *parsedStartDate,
+		EndDate:     parsedEndDate,
 	}
 
 	if err := h.service.CreateSubscription(r.Context(), sub); err != nil {
@@ -42,10 +75,11 @@ func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.
 	}
 
 	response := dto.ToSubscriptionResponse(sub)
+
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
 		http.Error(w, "error while decoding response", http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }

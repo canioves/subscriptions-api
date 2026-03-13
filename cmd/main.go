@@ -24,13 +24,14 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer database.Close(ctx)
 
 	repo := repository.NewSubscriptionRepository(database)
 	service := service.NewSubscriptionRepository(repo)
 	handler := handler.NewSubscriptionHandler(service)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/subscriptions", handler.CreateSubscription)
+	router.HandleFunc("/subscriptions", handler.CreateSubscription).Methods("POST")
 
 	http.ListenAndServe(":"+config.AppPort, router)
 }
