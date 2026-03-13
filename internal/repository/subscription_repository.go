@@ -56,10 +56,15 @@ func (r *subscriptionRepository) GetSubscription(ctx context.Context, id uint) (
 	query := "SELECT * FROM subscriptions WHERE id = $1"
 
 	var sub *model.Subscription
-	row := r.database.QueryRow(ctx, query, id)
+	rows, err := r.database.Query(ctx, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
 
-	if err := row.Scan(&sub); err != nil {
-		return nil, fmt.Errorf("failed to get subscription with id %d: %w", id, err)
+	sub, err = pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[model.Subscription])
+
+	if err != nil {
+		return nil, fmt.Errorf("collect row failed: %w", err)
 	}
 
 	log.Printf("got new subscription with id %d\n", id)

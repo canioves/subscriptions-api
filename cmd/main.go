@@ -32,6 +32,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/subscriptions", handler.CreateSubscription).Methods("POST")
+	router.HandleFunc("/subscriptions/{id}", handler.GetSubscription).Methods("GET")
 
 	http.ListenAndServe(":"+config.AppPort, router)
 }

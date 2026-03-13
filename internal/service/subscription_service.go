@@ -9,6 +9,7 @@ import (
 
 type SubscriptionService interface {
 	CreateSubscription(ctx context.Context, sub *model.Subscription) error
+	GetSubscription(ctx context.Context, id uint) (*model.Subscription, error)
 }
 
 type subscriptionService struct {
@@ -25,4 +26,12 @@ func (s *subscriptionService) CreateSubscription(ctx context.Context, sub *model
 		return fmt.Errorf("failed while creating new subscription: %w", err)
 	}
 	return nil
+}
+
+func (s *subscriptionService) GetSubscription(ctx context.Context, id uint) (*model.Subscription, error) {
+	sub, err := s.repository.GetSubscription(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed while getting subscription with id %d: %w", id, err)
+	}
+	return sub, nil
 }
