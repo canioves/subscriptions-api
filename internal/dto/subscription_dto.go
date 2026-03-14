@@ -19,6 +19,12 @@ type CreateSubscriptionRequest struct {
 	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
 }
 
+type UpdateSubscriptionRequest struct {
+	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100"`
+	Price       *int    `json:"price,omitempty" validate:"omitempty,gt=0"`
+	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+}
+
 type SubscriptionResponse struct {
 	ID          uint       `json:"id"`
 	ServiceName string     `json:"service_name"`

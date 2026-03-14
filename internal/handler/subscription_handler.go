@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,14 +21,21 @@ func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHa
 	return &SubscriptionHandler{service: service}
 }
 
-func getIdParameter(r *http.Request) (int, error) {
+func getIdParameter(w http.ResponseWriter, r *http.Request) uint {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 	id, err := strconv.Atoi(idString)
 	if err != nil {
-		return 0, fmt.Errorf("id parameter is not a number")
+		http.Error(w, "error while parsing id parameter", http.StatusBadRequest)
+		log.Println(err)
+		return 0
 	}
-	return id, nil
+	if id < 0 {
+		http.Error(w, "id parameter must be greater than 0", http.StatusBadRequest)
+		log.Println("id parameter must be greater than 0")
+		return 0
+	}
+	return uint(id)
 }
 
 func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -100,19 +106,9 @@ func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.
 func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id, err := getIdParameter(r)
-	if err != nil {
-		http.Error(w, "error while parsing id parameter", http.StatusBadRequest)
-		log.Println(err)
-		return
-	}
-	if id < 0 {
-		http.Error(w, "id parameter must be greater than 0", http.StatusBadRequest)
-		log.Println("id parameter must be greater than 0")
-		return
-	}
+	id := getIdParameter(w, r)
 
-	sub, err := h.service.GetSubscription(r.Context(), uint(id))
+	sub, err := h.service.GetSubscription(r.Context(), id)
 	if err != nil {
 		http.Error(w, "error while getting subscription", http.StatusInternalServerError)
 		log.Println(err)
@@ -126,4 +122,35 @@ func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+}
+
+func (h *SubscriptionHandler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	subs, err := h.service.ListSubscriptions(r.Context())
+	if err != nil {
+		http.Error(w, "error while getting all subscriptions", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	var responses []*dto.SubscriptionResponse
+	for _, sub := range subs {
+		response := dto.ToSubscriptionResponse(sub)
+		responses = append(responses, response)
+	}
+
+	if err := json.NewEncoder(w).Encode(&responses); err != nil {
+		http.Error(w, "error while decoding response", http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+}
+
+func (h *SubscriptionHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := getIdParameter(w, r)
+
+	err := h.service.UpdateSubscription(r.Context(), id, sub)
 }
