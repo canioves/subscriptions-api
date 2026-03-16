@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	appErrors "subscriptions-api/internal/errors"
+	"subscriptions-api/internal/logger"
 	"subscriptions-api/internal/model"
 
 	"github.com/jackc/pgx/v5"
@@ -13,8 +16,9 @@ type SubscriptionRepository interface {
 	CreateSubscription(ctx context.Context, sub *model.Subscription) error
 	GetSubscription(ctx context.Context, id uint) (*model.Subscription, error)
 	ListSubscriptions(ctx context.Context) ([]*model.Subscription, error)
-	UpdateSubscription(ctx context.Context, id uint, sub *model.Subscription) error
+	UpdateSubscription(ctx context.Context, id uint, updateSub *model.UpdateSubscription) error
 	DeleteSubscription(ctx context.Context, id uint) error
+	CollectStats(ctx context.Context, filter *model.SubscriptionFilter) (*model.SubscriptionStat, error)
 }
 
 type subscriptionRepository struct {
@@ -58,16 +62,19 @@ func (r *subscriptionRepository) GetSubscription(ctx context.Context, id uint) (
 	var sub *model.Subscription
 	rows, err := r.database.Query(ctx, query, id)
 	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		return nil, fmt.Errorf("[REPO] Query failed -> %w", err)
 	}
 
 	sub, err = pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[model.Subscription])
 
 	if err != nil {
-		return nil, fmt.Errorf("collect row failed: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
+		}
+		return nil, fmt.Errorf("[REPO] Collect row failed -> %w", err)
 	}
 
-	log.Printf("got new subscription with id %d\n", id)
+	logger.Info("[REPO] OK!")
 	return sub, nil
 }
 
@@ -78,17 +85,21 @@ func (r *subscriptionRepository) ListSubscriptions(ctx context.Context) ([]*mode
 	rows, err := r.database.Query(ctx, query)
 
 	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		return nil, fmt.Errorf("[REPO] Query failed -> %w", err)
 	}
 
 	subs, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[model.Subscription])
 	if err != nil {
-		return nil, fmt.Errorf("collect rows failed: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
+		}
+		return nil, fmt.Errorf("[REPO] Collect rows failed -> %w", err)
 	}
+	logger.Info("[REPO] OK!")
 	return subs, nil
 }
 
-func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, id uint, sub *model.Subscription) error {
+func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, id uint, updateSub *model.UpdateSubscription) error {
 	query := `
 	UPDATE subscriptions SET
 		service_name = COALESCE($1, service_name),
@@ -96,21 +107,61 @@ func (r *subscriptionRepository) UpdateSubscription(ctx context.Context, id uint
 		end_date = COALESCE($3, end_date)
 	WHERE id = $4
 	`
-	row := r.database.QueryRow(ctx, query, sub.ServiceName, sub.Price, sub.EndDate)
-	if err := row.Scan(); err != nil {
-		return fmt.Errorf("failed to update subscription with id %d: %w", id, err)
+	_, err := r.database.Exec(ctx, query, updateSub.ServiceName, updateSub.Price, updateSub.EndDate, id)
+	if err != nil {
+		return fmt.Errorf("[REPO] Failed to execute query -> %w", err)
 	}
-	log.Printf("updated subscription with id %d\n", id)
+	updateSub.ID = id
+
+	logger.Info("[REPO] OK!")
 	return nil
 }
 
 func (r *subscriptionRepository) DeleteSubscription(ctx context.Context, id uint) error {
 	query := `DELETE FROM subscriptions WHERE id = $1`
-	row := r.database.QueryRow(ctx, query, id)
+	_, err := r.database.Exec(ctx, query, id)
 
-	if err := row.Scan(); err != nil {
-		return fmt.Errorf("failed to delete subscription with id %d: %w", id, err)
+	if err != nil {
+		return fmt.Errorf("[REPO] Failed to execute query -> %w", err)
 	}
-	log.Printf("deleted subscription with id %d\n", id)
+
+	logger.Info("[REPO] OK!")
 	return nil
+}
+
+func (r *subscriptionRepository) CollectStats(ctx context.Context, filter *model.SubscriptionFilter) (*model.SubscriptionStat, error) {
+	query := `
+	SELECT
+		COUNT(id) as total_count,
+		COALESCE(SUM(price), 0) as total_sum
+	FROM subscriptions
+	WHERE (start_date <= $2 and (end_date >= $1 or end_date is null))
+	`
+
+	if filter.ServiceName != nil {
+		query += fmt.Sprintf(" AND service_name ILIKE '%s'", *filter.ServiceName)
+	}
+
+	if filter.UserID != nil {
+		query += fmt.Sprintf(" AND user_id = '%s'", *filter.UserID)
+	}
+
+	var stat *model.SubscriptionStat
+
+	rows, err := r.database.Query(ctx, query, filter.StartPeriod, filter.EndPeriod)
+
+	if err != nil {
+		return nil, fmt.Errorf("[REPO] Query failed -> %w", err)
+	}
+
+	stat, err = pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[model.SubscriptionStat])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, appErrors.ErrNotFound
+		}
+		return nil, fmt.Errorf("[REPO] Collect rows failed -> %w", err)
+	}
+
+	logger.Info("[REPO] OK!")
+	return stat, nil
 }

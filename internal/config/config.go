@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"subscriptions-api/internal/logger"
 
 	"github.com/joho/godotenv"
 )
@@ -17,6 +18,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
+	logger.Info("[CONFIG] Loading config...")
 	envFlag := os.Getenv("GO_ENV")
 	config := Config{}
 
@@ -25,7 +27,8 @@ func LoadConfig() (*Config, error) {
 	} else {
 		err := godotenv.Load()
 		if err != nil {
-			return nil, fmt.Errorf("an error occured while loading .env file: %w", err)
+			logger.Error("[CONFIG] Error with config -> %w", err)
+			return nil, fmt.Errorf("[CONFIG] An error occured while loading .env file -> %w", err)
 		}
 
 		config.DBHost = os.Getenv("DB_HOST_LOCAL")
@@ -37,5 +40,6 @@ func LoadConfig() (*Config, error) {
 	config.DBPort = os.Getenv("DB_PORT")
 	config.AppPort = os.Getenv("APP_PORT")
 
+	logger.Info("[CONFIG] OK")
 	return &config, nil
 }

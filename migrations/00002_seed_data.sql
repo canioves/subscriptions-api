@@ -1,17 +1,17 @@
 -- +goose Up
-INSERT INTO 
-"subscriptions" (service_name, price, user_id, start_date, end_date)
-VALUES
-('Service1', 100, gen_random_uuid(), '2026-03-12 14:47:51', '2026-03-15 14:47:51'),
-('Service2', 200, gen_random_uuid(), '2026-03-13 14:47:51', NULL),
-('Service3', 300, gen_random_uuid(), '2026-03-14 14:47:51', '2026-03-18 14:47:51'),
-('Service4', 400, gen_random_uuid(), '2026-03-15 14:47:51', '2026-03-20 14:47:51'),
-('Service5', 500, gen_random_uuid(), '2026-03-16 14:47:51', NULL),
-('Service6', 600, gen_random_uuid(), '2026-03-17 14:47:51', '2026-03-22 14:47:51'),
-('Service7', 700, gen_random_uuid(), '2026-03-18 14:47:51', '2026-03-25 14:47:51'),
-('Service8', 800, gen_random_uuid(), '2026-03-19 14:47:51', NULL),
-('Service9', 900, gen_random_uuid(), '2026-03-20 14:47:51', '2026-03-28 14:47:51'),
-('Service10', 1000, gen_random_uuid(), '2026-03-21 14:47:51', '2026-03-30 14:47:51');
+INSERT INTO subscriptions (service_name, price, user_id, start_date, end_date) VALUES
+('Netflix', 10, '123e4567-e89b-12d3-a456-426614174000', '2024-01-15', NULL),
+('Spotify', 5, '123e4567-e89b-12d3-a456-426614174000', '2024-02-01', NULL),
+('GitHub', 7, '123e4567-e89b-12d3-a456-426614174000', '2024-03-10', NULL),
+('Netflix', 15, '223e4567-e89b-12d3-a456-426614174001', '2024-01-20', NULL),
+('Disney+', 8, '223e4567-e89b-12d3-a456-426614174001', '2024-02-15', '2024-12-31'),
+('Apple Music', 6, '223e4567-e89b-12d3-a456-426614174001', '2024-03-01', NULL),
+('YouTube Premium', 12, '323e4567-e89b-12d3-a456-426614174002', '2023-11-01', '2024-06-30'),
+('Amazon Prime', 9, '323e4567-e89b-12d3-a456-426614174002', '2024-01-01', '2024-12-31'),
+('Twitch', 4, '323e4567-e89b-12d3-a456-426614174002', '2024-05-01', NULL),
+('HBO Max', 13, '123e4567-e89b-12d3-a456-426614174000', '2023-01-01', '2023-12-31'),
+('Paramount+', 7, '223e4567-e89b-12d3-a456-426614174001', '2023-06-01', '2024-02-28'),
+('Peacock', 5, '323e4567-e89b-12d3-a456-426614174002', '2023-03-01', '2023-09-30');
 
 -- +goose Down
-DELETE FROM "subscriptions";
+TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE;

@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"subscriptions-api/internal/config"
 	"subscriptions-api/internal/database"
 	"subscriptions-api/internal/handler"
+	"subscriptions-api/internal/logger"
 	"subscriptions-api/internal/repository"
 	"subscriptions-api/internal/service"
 
@@ -17,12 +17,12 @@ func main() {
 	ctx := context.Background()
 	config, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("[MAIN] Error with config -> %w", err)
 	}
 
 	database, err := database.Connect(ctx, config)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("[MAIN] Error with database -> %w", err)
 	}
 	defer database.Close(ctx)
 
@@ -31,9 +31,12 @@ func main() {
 	handler := handler.NewSubscriptionHandler(service)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/subscriptions", handler.CreateSubscription).Methods("POST")
-	router.HandleFunc("/subscriptions", handler.ListSubscriptions).Methods("GET")
+	router.HandleFunc("/subscriptions/stats", handler.CollectStats).Methods("GET")
 	router.HandleFunc("/subscriptions/{id}", handler.GetSubscription).Methods("GET")
+	router.HandleFunc("/subscriptions/{id}", handler.UpdateSubscription).Methods("PATCH")
+	router.HandleFunc("/subscriptions/{id}", handler.DeleteSubscription).Methods("DELETE")
+	router.HandleFunc("/subscriptions", handler.ListSubscriptions).Methods("GET")
+	router.HandleFunc("/subscriptions", handler.CreateSubscription).Methods("POST")
 
 	http.ListenAndServe(":"+config.AppPort, router)
 }

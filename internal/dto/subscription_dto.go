@@ -11,7 +11,10 @@ import (
 
 var validate = validator.New()
 
+type Validator struct{}
+
 type CreateSubscriptionRequest struct {
+	Validator
 	ServiceName string  `json:"service_name" validate:"required,min=1,max=100"`
 	Price       int     `json:"price" validate:"required,gt=0"`
 	UserID      string  `json:"user_id" validate:"required,uuid"`
@@ -20,9 +23,23 @@ type CreateSubscriptionRequest struct {
 }
 
 type UpdateSubscriptionRequest struct {
+	Validator
 	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100"`
 	Price       *int    `json:"price,omitempty" validate:"omitempty,gt=0"`
 	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+}
+
+type SumSubscriptionRequest struct {
+	Validator
+	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100"`
+	UserID      *string `json:"user_id,omitempty" validate:"omitempty,uuid"`
+	StartPeriod string  `json:"start_period" validate:"required,datetime=01-2006"`
+	EndPeriod   string  `json:"end_period" validate:"required,datetime=01-2006"`
+}
+
+type SumSubscriptionResponse struct {
+	TotalCount int `json:"total_count"`
+	TotalSum   int `json:"total_sum"`
 }
 
 type SubscriptionResponse struct {
@@ -31,6 +48,13 @@ type SubscriptionResponse struct {
 	Price       uint       `json:"price"`
 	UserID      uuid.UUID  `json:"user_id"`
 	StartDate   time.Time  `json:"start_date"`
+	EndDate     *time.Time `json:"end_date,omitempty"`
+}
+
+type UpdateSubscriptionResponse struct {
+	ID          uint       `json:"id"`
+	ServiceName *string    `json:"service_name,omitempty"`
+	Price       *uint      `json:"price,omitempty"`
 	EndDate     *time.Time `json:"end_date,omitempty"`
 }
 
@@ -49,6 +73,30 @@ func ToSubscriptionResponse(sub *model.Subscription) *SubscriptionResponse {
 	}
 }
 
+func ToUpdateSubscriptionResponse(updateSub *model.UpdateSubscription) *UpdateSubscriptionResponse {
+	if updateSub == nil {
+		return nil
+	}
+
+	return &UpdateSubscriptionResponse{
+		ID:          updateSub.ID,
+		ServiceName: updateSub.ServiceName,
+		Price:       updateSub.Price,
+		EndDate:     updateSub.EndDate,
+	}
+}
+
+func ToSumSubscriptionResponse(stats *model.SubscriptionStat) *SumSubscriptionResponse {
+	if stats == nil {
+		return nil
+	}
+
+	return &SumSubscriptionResponse{
+		TotalCount: stats.TotalCount,
+		TotalSum:   stats.TotalSum,
+	}
+}
+
 func ParseDate(s *string) (*time.Time, error) {
 	if s == nil {
 		return nil, nil
@@ -61,7 +109,11 @@ func ParseDate(s *string) (*time.Time, error) {
 	return &parsedDate, nil
 }
 
-func (req *CreateSubscriptionRequest) Validate() error {
+func (req *UpdateSubscriptionRequest) IsEmpty() bool {
+	return req.ServiceName == nil && req.Price == nil && req.EndDate == nil
+}
+
+func (Validator) validate(req any) error {
 	if err := validate.Struct(req); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		errors := make(map[string]string)
@@ -75,6 +127,18 @@ func (req *CreateSubscriptionRequest) Validate() error {
 		return &ValidationError{Errors: errors}
 	}
 	return nil
+}
+
+func (req *CreateSubscriptionRequest) Validate() error {
+	return req.validate(req)
+}
+
+func (req *UpdateSubscriptionRequest) Validate() error {
+	return req.validate(req)
+}
+
+func (req *SumSubscriptionRequest) Validate() error {
+	return req.validate(req)
 }
 
 func getErrorMessage(field string, tag string) string {

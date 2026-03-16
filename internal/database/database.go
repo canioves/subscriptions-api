@@ -3,13 +3,14 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"subscriptions-api/internal/config"
+	"subscriptions-api/internal/logger"
 
 	"github.com/jackc/pgx/v5"
 )
 
 func Connect(ctx context.Context, config *config.Config) (*pgx.Conn, error) {
+	logger.Info("[DB] Connecting to database...")
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		config.DBUser,
 		config.DBPassword,
@@ -19,12 +20,14 @@ func Connect(ctx context.Context, config *config.Config) (*pgx.Conn, error) {
 	)
 	connection, err := pgx.Connect(ctx, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("can't connect to database: %w", err)
+		logger.Error("[DB] Can't connect to database")
+		return nil, fmt.Errorf("[DB] Can't connect to database -> %w", err)
 	}
 	if err := connection.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("ping failed: %w", err)
+		logger.Error("[DB] Ping failed")
+		return nil, fmt.Errorf("[DB] Ping failed -> %w", err)
 	} else {
-		log.Println("succesfully connected to database")
+		logger.Info("[DB] OK!")
 	}
 	return connection, nil
 }
