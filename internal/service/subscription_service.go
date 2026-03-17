@@ -77,6 +77,9 @@ func (s *subscriptionService) UpdateSubscription(ctx context.Context, id uint, u
 }
 
 func (s *subscriptionService) DeleteSubscription(ctx context.Context, id uint) error {
+	if _, err := s.repository.GetSubscription(ctx, id); err != nil {
+		return fmt.Errorf("[SERVICE] Failed while receiving subscription -> %w", err)
+	}
 	err := s.repository.DeleteSubscription(ctx, id)
 	if err != nil {
 		return fmt.Errorf("[SERVICE] Failed while deleting subscription with id %d -> %w", id, err)

@@ -162,7 +162,6 @@ func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Req
 	logger.Info("[HANDLER] Using service...")
 	sub, err := h.service.GetSubscription(r.Context(), id)
 	if err != nil {
-		logger.Error("[HANDLER] Error while getting subscription -> %s", err)
 		if errors.Is(err, appErrors.ErrNotFound) {
 			h.sendError(w, http.StatusNotFound, "Subscription not found", err)
 			return
@@ -271,7 +270,6 @@ func (h *SubscriptionHandler) UpdateSubscription(w http.ResponseWriter, r *http.
 
 	logger.Info("[HANDLER] Using service...")
 	if err := h.service.UpdateSubscription(r.Context(), id, sub); err != nil {
-		logger.Error("[HANDLER] Error while updating subscription -> %s", err)
 		if errors.Is(err, appErrors.ErrNotFound) {
 			h.sendError(w, http.StatusNotFound, "Subscription not found", err)
 			return
@@ -307,7 +305,6 @@ func (h *SubscriptionHandler) DeleteSubscription(w http.ResponseWriter, r *http.
 	logger.Info("[HANDLER] Using service...")
 	err = h.service.DeleteSubscription(r.Context(), id)
 	if err != nil {
-		logger.Error("[HANDLER] Error while deleting subscription -> %s", err)
 		if errors.Is(err, appErrors.ErrNotFound) {
 			h.sendError(w, http.StatusNotFound, "Subscription not found", err)
 			return
