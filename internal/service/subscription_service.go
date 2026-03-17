@@ -28,9 +28,12 @@ func NewSubscriptionRepository(repository repository.SubscriptionRepository) Sub
 }
 
 func (s *subscriptionService) CreateSubscription(ctx context.Context, sub *model.Subscription) error {
-	if sub.EndDate.Before(sub.StartDate) {
-		return fmt.Errorf("[SERVICE] End date cannot be earlier than start date")
+	if sub.EndDate != nil {
+		if sub.EndDate.Before(sub.StartDate) {
+			return fmt.Errorf("[SERVICE] End date cannot be earlier than start date")
+		}
 	}
+
 	err := s.repository.CreateSubscription(ctx, sub)
 	if err != nil {
 		return fmt.Errorf("[SERVICE] Failed while creating new subscription -> %w", err)

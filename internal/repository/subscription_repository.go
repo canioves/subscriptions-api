@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	appErrors "subscriptions-api/internal/errors"
 	"subscriptions-api/internal/logger"
 	"subscriptions-api/internal/model"
@@ -49,10 +48,10 @@ func (r *subscriptionRepository) CreateSubscription(ctx context.Context, sub *mo
 	)
 
 	if err := row.Scan(&id); err != nil {
-		return fmt.Errorf("failed to create subscription with id %d: %w", id, err)
+		return fmt.Errorf("[REPO] Query failed -> %w", err)
 	}
 	sub.ID = id
-	log.Printf("created new subscription with id %d\n", id)
+	logger.Info("[REPO] OK!")
 	return nil
 }
 

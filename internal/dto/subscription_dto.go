@@ -13,49 +13,61 @@ var validate = validator.New()
 
 type Validator struct{}
 
+// CreateSubscriptionRequest represents the request body for creating a subscription
+// @Description Request body for creating a new subscription
 type CreateSubscriptionRequest struct {
 	Validator
-	ServiceName string  `json:"service_name" validate:"required,min=1,max=100"`
-	Price       int     `json:"price" validate:"required,gt=0"`
-	UserID      string  `json:"user_id" validate:"required,uuid"`
-	StartDate   string  `json:"start_date" validate:"required,datetime=01-2006"`
-	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	ServiceName string  `json:"service_name" validate:"required,min=1,max=100" example:"Netflix" enums:"Netflix,Spotify,Apple Music"`
+	Price       int     `json:"price" validate:"required,gt=0" example:"999" minimum:"1"`
+	UserID      string  `json:"user_id" validate:"required,uuid" example:"123e4567-e89b-12d3-a456-426614174000"`
+	StartDate   string  `json:"start_date" validate:"required,datetime=01-2006" example:"01-2024"`
+	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"  example:"12-2024"`
 }
 
+// UpdateSubscriptionRequest represents the request body for updating a subscription
+// @Description Request body for updating an existing subscription
 type UpdateSubscriptionRequest struct {
 	Validator
-	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100"`
-	Price       *int    `json:"price,omitempty" validate:"omitempty,gt=0"`
-	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006"`
+	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100" example:"Netflix"`
+	Price       *int    `json:"price,omitempty" validate:"omitempty,gt=0" example:"999"`
+	EndDate     *string `json:"end_date,omitempty" validate:"omitempty,datetime=01-2006" example:"01-2024"`
 }
 
+// SumSubscriptionRequest represents the request body for collecting statistics
+// @Description Request body for collecting subscription statistics
 type SumSubscriptionRequest struct {
 	Validator
-	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100"`
-	UserID      *string `json:"user_id,omitempty" validate:"omitempty,uuid"`
-	StartPeriod string  `json:"start_period" validate:"required,datetime=01-2006"`
-	EndPeriod   string  `json:"end_period" validate:"required,datetime=01-2006"`
+	ServiceName *string `json:"service_name,omitempty" validate:"omitempty,min=1,max=100" example:"Netflix"`
+	UserID      *string `json:"user_id,omitempty" validate:"omitempty,uuid" example:"123e4567-e89b-12d3-a456-426614174000"`
+	StartPeriod string  `json:"start_period" validate:"required,datetime=01-2006" example:"01-2024"`
+	EndPeriod   string  `json:"end_period" validate:"required,datetime=01-2006" example:"12-2024"`
 }
 
+// SubscriptionResponse represents the response for a subscription
+// @Description Response containing subscription details
 type SumSubscriptionResponse struct {
-	TotalCount int `json:"total_count"`
-	TotalSum   int `json:"total_sum"`
+	TotalCount int `json:"total_count" example:"10"`
+	TotalSum   int `json:"total_sum" example:"15"`
 }
 
+// UpdateSubscriptionResponse represents the response for an updated subscription
+// @Description Response containing updated subscription fields
 type SubscriptionResponse struct {
-	ID          uint       `json:"id"`
-	ServiceName string     `json:"service_name"`
-	Price       uint       `json:"price"`
-	UserID      uuid.UUID  `json:"user_id"`
-	StartDate   time.Time  `json:"start_date"`
-	EndDate     *time.Time `json:"end_date,omitempty"`
+	ID          uint       `json:"id" example:"1"`
+	ServiceName string     `json:"service_name" example:"Netflix"`
+	Price       uint       `json:"price" example:"999"`
+	UserID      uuid.UUID  `json:"user_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	StartDate   time.Time  `json:"start_date" example:"01-2024"`
+	EndDate     *time.Time `json:"end_date,omitempty" example:"12-2024"`
 }
 
+// SumSubscriptionResponse represents the statistics response
+// @Description Response containing subscription statistics
 type UpdateSubscriptionResponse struct {
-	ID          uint       `json:"id"`
-	ServiceName *string    `json:"service_name,omitempty"`
-	Price       *uint      `json:"price,omitempty"`
-	EndDate     *time.Time `json:"end_date,omitempty"`
+	ID          uint       `json:"id" example:"1"`
+	ServiceName *string    `json:"service_name,omitempty" example:"Netflix"`
+	Price       *uint      `json:"price,omitempty" example:"999"`
+	EndDate     *time.Time `json:"end_date,omitempty" example:"12-2024"`
 }
 
 func ToSubscriptionResponse(sub *model.Subscription) *SubscriptionResponse {
@@ -162,6 +174,10 @@ func getErrorMessage(field string, tag string) string {
 
 type ValidationError struct {
 	Errors map[string]string `json:"errors"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 func (e *ValidationError) Error() string {

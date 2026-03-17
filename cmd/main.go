@@ -11,7 +11,17 @@ import (
 	"subscriptions-api/internal/service"
 
 	"github.com/gorilla/mux"
+
+	_ "subscriptions-api/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// @title           Subscriptions API
+// @version         1.0
+// @description     CRUDL subscription service
+
+// @BasePath  /subscriptions
 
 func main() {
 	ctx := context.Background()
@@ -31,6 +41,9 @@ func main() {
 	handler := handler.NewSubscriptionHandler(service)
 
 	router := mux.NewRouter()
+
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
 	router.HandleFunc("/subscriptions/stats", handler.CollectStats).Methods("GET")
 	router.HandleFunc("/subscriptions/{id}", handler.GetSubscription).Methods("GET")
 	router.HandleFunc("/subscriptions/{id}", handler.UpdateSubscription).Methods("PATCH")
